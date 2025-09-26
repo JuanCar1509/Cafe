@@ -26,8 +26,38 @@ def guardar_precios(precios):
         json.dump(precios.tolist(), f)
         
 def registrar_movimiento(mensaje):
-    with open('historial.log', 'a') as f:
+    # Escribir nuevos movimientos en UTF-8 para estandarizar la codificación
+    with open('historial.log', 'a', encoding='utf-8') as f:
         f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {mensaje}\n")
+
+def leer_historial(max_lineas=50):
+    # Devuelve las últimas `max_lineas` del historial.log como lista de líneas (más reciente primero)
+    try:
+        # Leer en binario y decodificar intentando UTF-8, luego CP1252 (Windows),
+        # y finalmente con replacement para evitar excepciones por bytes inválidos.
+        with open('historial.log', 'rb') as f:
+            raw = f.read()
+        # Intentar UTF-8
+        try:
+            text = raw.decode('utf-8')
+        except UnicodeDecodeError:
+            # Intentar CP1252 (común en Windows)
+            try:
+                text = raw.decode('cp1252')
+            except UnicodeDecodeError:
+                # Como último recurso, decodificar reemplazando bytes inválidos
+                text = raw.decode('utf-8', errors='replace')
+
+        lineas = text.strip().splitlines()
+        if not lineas:
+            return []
+        # Tomar las últimas `max_lineas` y devolver en orden cronológico descendente (más reciente primero)
+        return list(reversed(lineas[-max_lineas:]))
+    except FileNotFoundError:
+        # Crear archivo vacío en UTF-8 para futuras escrituras
+        with open('historial.log', 'w', encoding='utf-8'):
+            pass
+        return []
 
 # --- Rutas de la Aplicación Web ---
 
@@ -42,13 +72,15 @@ def index():
     valor_total = np.sum(valor_por_bodega)
     
     # Pasamos todos los datos a la plantilla HTML para que los muestre
+    historial = leer_historial(200)
     return render_template('index.html', 
                            bodegas=BODEGAS, 
                            cafes=CAFES, 
                            inventario=inventario, 
                            precios=precios,
                            valor_por_bodega=valor_por_bodega,
-                           valor_total=valor_total)
+                           valor_total=valor_total,
+                           historial=historial)
 
 @app.route('/actualizar-precios', methods=['POST'])
 def actualizar_precios():

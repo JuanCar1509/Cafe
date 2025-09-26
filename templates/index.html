@@ -89,6 +89,21 @@
                         </form>
                     </div>
                 </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header"><strong>Historial de Movimientos</strong></div>
+                    <div class="card-body" style="max-height:260px; overflow:auto;">
+                        {% if historial and historial|length > 0 %}
+                            <ul class="list-group list-group-flush">
+                                {% for linea in historial %}
+                                    <li class="list-group-item small">{{ linea }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted">No hay movimientos registrados aún.</p>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
